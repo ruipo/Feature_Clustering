@@ -12,7 +12,7 @@ prefix = '/Volumes/icex6/ICEX_UNCLASS/ICEX16/macrura/2016-03-13/DURIP/DURIP_2016
 directory = dir([prefix 'ACO0000*.DAT']);
 
 first_file = 2000+0*(1800/4);
-last_file = first_file + (1800/4);
+last_file = first_file + 10;
  
 % Read DATA
 aco_in = zeros(NUM_SAMPLES * (last_file-first_file), 32);
