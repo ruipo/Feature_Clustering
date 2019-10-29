@@ -30,4 +30,7 @@ for i in np.arange(first_file,last_file):
     #Read the single precision float acoustic data samples (in uPa)
     aco_in[((counter-1)*NUM_SAMPLES):(counter*NUM_SAMPLES),:] = data_temp
      
-    fid.close();
+    fid.close()
+
+time = (1/(FS))*np.arange(aco_in.shape[0])
+
