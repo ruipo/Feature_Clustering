@@ -2,7 +2,7 @@
 import numpy as np
 from os import listdir
 import matplotlib.pyplot as plt 
-from scipy.signal import butter, filtfilt, freqz
+from scipy.signal import butter, filtfilt
 
 # Read in data
 path = '/Volumes/icex6/ICEX_UNCLASS/ICEX16\
@@ -96,4 +96,59 @@ for l in np.arange(int(num_window)):
     
     for i in np.arange(timesteps):
         train_dataset[l,i,:,:,0] = data_seg[int(i*step_start):int(i*step_start+win_len),:].T
+
+##############################################################################################################
+
+#Set up RNN
+
+import keras
+import tensorflow as tf
+import h5py
+import time
+from keras.layers import Input, ConvLSTM2D,UpSampling2D,Reshape,Conv3D,Lambda,Flatten,Dense
+from keras.models import Model
+import keras.backend as k
+
+def stacklayer(decoded):
+    x = [decoded,decoded,decoded,decoded,decoded,decoded,decoded,decoded,decoded,decoded,decoded,decoded,decoded,decoded,\
+    decoded,decoded,decoded,decoded,decoded,decoded,decoded,decoded,decoded,decoded,decoded,decoded,decoded,decoded,decoded,\
+    decoded,decoded,decoded]
+    return k.stack(x,axis=1)
+
+inputs = Input(shape=(32, 32, 8192, 1))
+encoded = ConvLSTM2D(10, (32,32), strides=(32,32), padding='valid', activation='tanh', recurrent_activation='hard_sigmoid',activity_regularizer=None, return_sequences=False, dropout=0.0, recurrent_dropout=0.0)(inputs)
+encoded = Flatten()(encoded)
+encoded = Dense(2,activation = 'linear')(encoded)
+
+
+decoded = Dense(2560,activation = 'linear')(encoded)
+decoded = Reshape((-1,256,10))(decoded)
+decoded = UpSampling2D((32,32))(decoded)
+decoded = Lambda(stacklayer)(decoded)
+decoded = ConvLSTM2D(10, (32,32), strides=(1,1), padding='same', activation='tanh', recurrent_activation='hard_sigmoid',activity_regularizer=None, return_sequences=True, dropout=0.0, recurrent_dropout=0.0)(decoded)
+decoded = Conv3D(1,(32,32,1), strides=(1,1,1), padding='same',activation = 'sigmoid')(decoded)
+
+sequence_autoencoder = Model(inputs, decoded)
+encoder = Model(inputs, encoded)
+sequence_autoencoder.compile(optimizer='adam', loss='mse')
+
+filepath = 'autoencoder.hdf5'
+checkpoint = keras.callbacks.ModelCheckpoint(filepath, monitor='val_loss', save_best_only=True, mode='auto',period=1)
+reduce = keras.callbacks.ReduceLROnPlateau(monitor='val_loss', factor=0.1, patience=5, mode='auto')
+early = keras.callbacks.EarlyStopping(monitor='val_loss', min_delta=1e-4, patience=10, mode='auto',restore_best_weights=True)
+callbacks_list = [checkpoint,reduce,early]
+
+t = time.time()
+autoencoder_model = sequence_autoencoder.fit(train_dataset, train_dataset, 32, verbose = True, epochs=1, validation_split=0.2, shuffle=True, callbacks=callbacks_list)
+elapsed = time.time() - t
+print(elapsed)
+
+
+
+
+
+
+
+
+
 
