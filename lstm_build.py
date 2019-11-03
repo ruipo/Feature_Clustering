@@ -3,6 +3,7 @@ from icex_load import icex_readin, training_set_form
 import butter_bpfilt as bbpf
 from sklearn import preprocessing
 import matplotlib.pyplot as plt
+from Convlstm_AE import CREC
 
 # Read in data
 path = '/Volumes/icex6/ICEX_UNCLASS/ICEX16\
@@ -36,3 +37,7 @@ plt.grid(True)
 plt.axis('tight')
 plt.show()
 
+crec = CREC(input_shape = (32,32,8192,1), filter_num = 10, n_clusters=2, alpha=1.0)
+crec.model.summary()
+optimizer = 'adam'
+crec.compile(loss=['kld', 'mse'], loss_weights=[1, 1], optimizer=optimizer)
