@@ -37,7 +37,11 @@ plt.grid(True)
 plt.axis('tight')
 plt.show()
 
-crec = CREC(input_shape = (32,32,8192,1), filter_num = 10, n_clusters=2, alpha=1.0)
+crec = CREC(input_shape = (32,32,8192,1), filter_num = 1, n_clusters=2, alpha=1.0)
 crec.model.summary()
 optimizer = 'adam'
 crec.compile(loss=['kld', 'mse'], loss_weights=[1, 1], optimizer=optimizer)
+crec.fit(train_dataset,y=None)
+labels = crec.y_pred
+
+

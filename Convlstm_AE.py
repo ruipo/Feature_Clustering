@@ -3,6 +3,9 @@ from keras.models import Sequential,Model
 from keras.engine.topology import Layer, InputSpec
 #from keras.utils.vis_utils import plot_model
 import keras.backend as K
+from time import time
+from sklearn.cluster import KMeans
+import numpy as np
 
 def stacklayer(decoded):
     x = [decoded,decoded,decoded,decoded,decoded,decoded,decoded,decoded,decoded,decoded,decoded,decoded,decoded,decoded,\
@@ -10,13 +13,13 @@ def stacklayer(decoded):
     decoded,decoded,decoded]
     return K.stack(x,axis=1)
 
-def RAE(input_shape = (32,32,8192,1), filter_num = 10, encoding_len = 2):
+def RAE(input_shape = (32,32,8192,1), filter_num = 1, encoding_len = 2):
 	model = Sequential()
 	model.add(ConvLSTM2D(filter_num, (32,32), strides=(32,32), padding='valid', activation='tanh', recurrent_activation='hard_sigmoid',activity_regularizer=None, return_sequences=False, dropout=0.0, recurrent_dropout=0.0, name='convlstm1',input_shape=input_shape))
 	model.add(Flatten(name='flatten'))
 	model.add(Dense(encoding_len,activation = 'linear',name='embedding'))
 
-	model.add(Dense(2560,activation = 'linear'))
+	model.add(Dense(256,activation = 'linear'))
 	model.add(Reshape((-1,256,filter_num)))
 	model.add(UpSampling2D((32,32)))
 	model.add(Lambda(stacklayer))
@@ -69,7 +72,7 @@ class ClusteringLayer(Layer):
 class CREC(object):
     def __init__(self,
                  input_shape = (32,32,8192,1), 
-                 filter_num = 10,
+                 filter_num = 1,
                  n_clusters=2,
                  alpha=1.0):
 
@@ -81,7 +84,7 @@ class CREC(object):
         self.pretrained = False
         self.y_pred = []
 
-        self.rae = RAE(input_shape = (32,32,8192,1), filter_num = 10, encoding_len = n_clusters)
+        self.rae = RAE(input_shape = (32,32,8192,1), filter_num = 1, encoding_len = n_clusters)
         hidden = self.rae.get_layer(name='embedding').output
         self.encoder = Model(inputs=self.rae.input, outputs=hidden)
 
@@ -89,6 +92,20 @@ class CREC(object):
         clustering_layer = ClusteringLayer(self.n_clusters, name='clustering')(hidden)
         self.model = Model(inputs=self.rae.input,
                            outputs=[clustering_layer, self.rae.output])
+
+    def pretrain(self, x, batch_size=32, epochs=200, optimizer='adam', save_dir='results'):
+        print('...Pretraining...')
+        self.rae.compile(optimizer=optimizer, loss='mse')
+        from keras.callbacks import CSVLogger
+        csv_logger = CSVLogger(save_dir + '/pretrain_log.csv')
+
+        # begin training
+        t0 = time()
+        self.rae.fit(x, x, batch_size=batch_size, epochs=epochs, callbacks=[csv_logger])
+        print('Pretraining time: ', time() - t0)
+        self.rae.save(save_dir + '/pretrain_cae_model.h5')
+        print('Pretrained weights are saved to %s/pretrain_rae_model.h5' % save_dir)
+        self.pretrained = True
 
 
     def load_weights(self, weights_path):
@@ -109,8 +126,8 @@ class CREC(object):
     def compile(self, loss=['kld', 'mse'], loss_weights=[1, 1], optimizer='adam'):
         self.model.compile(loss=loss, loss_weights=loss_weights, optimizer=optimizer)
 
-    '''def fit(self, x, y=None, batch_size=256, maxiter=2e4, tol=1e-3,
-            update_interval=140, cae_weights=None, save_dir='./results/temp'):
+    def fit(self, x, y=None, batch_size=32, maxiter=2e4, tol=1e-3,
+            update_interval=140, rae_weights=None, save_dir='./results'):
 
         print('Update interval', update_interval)
         save_interval = x.shape[0] / batch_size * 5
@@ -118,14 +135,14 @@ class CREC(object):
 
         # Step 1: pretrain if necessary
         t0 = time()
-        if not self.pretrained and cae_weights is None:
-            print('...pretraining CAE using default hyper-parameters:')
+        if not self.pretrained and rae_weights is None:
+            print('...pretraining RAE using default hyper-parameters:')
             print('   optimizer=\'adam\';   epochs=200')
             self.pretrain(x, batch_size, save_dir=save_dir)
             self.pretrained = True
-        elif cae_weights is not None:
-            self.cae.load_weights(cae_weights)
-            print('cae_weights is loaded successfully.')
+        elif rae_weights is not None:
+            self.rae.load_weights(rae_weights)
+            print('rae_weights is loaded successfully.')
 
         # Step 2: initialize cluster centers using k-means
         t1 = time()
@@ -140,13 +157,12 @@ class CREC(object):
         import csv, os
         if not os.path.exists(save_dir):
             os.makedirs(save_dir)
-        logfile = open(save_dir + '/dcec_log.csv', 'w')
+        logfile = open(save_dir + '/crec_log.csv', 'w')
         logwriter = csv.DictWriter(logfile, fieldnames=['iter', 'acc', 'nmi', 'ari', 'L', 'Lc', 'Lr'])
         logwriter.writeheader()
 
-        t2 = time()
-        loss = [0, 0, 0]
-        index = 0
+        #loss = [0, 0, 0]
+        #index = 0
         for ite in range(int(maxiter)):
             if ite % update_interval == 0:
                 q, _ = self.model.predict(x, verbose=0)
@@ -154,14 +170,14 @@ class CREC(object):
 
                 # evaluate the clustering performance
                 self.y_pred = q.argmax(1)
-                if y is not None:
+                '''if y is not None:
                     acc = np.round(metrics.acc(y, self.y_pred), 5)
                     nmi = np.round(metrics.nmi(y, self.y_pred), 5)
                     ari = np.round(metrics.ari(y, self.y_pred), 5)
                     loss = np.round(loss, 5)
                     logdict = dict(iter=ite, acc=acc, nmi=nmi, ari=ari, L=loss[0], Lc=loss[1], Lr=loss[2])
                     logwriter.writerow(logdict)
-                    print('Iter', ite, ': Acc', acc, ', nmi', nmi, ', ari', ari, '; loss=', loss)
+                    print('Iter', ite, ': Acc', acc, ', nmi', nmi, ', ari', ari, '; loss=', loss)'''
 
                 # check stop criterion
                 delta_label = np.sum(self.y_pred != y_pred_last).astype(np.float32) / self.y_pred.shape[0]
@@ -172,7 +188,7 @@ class CREC(object):
                     logfile.close()
                     break
 
-            # train on batch
+            '''# train on batch
             if (index + 1) * batch_size > x.shape[0]:
                 loss = self.model.train_on_batch(x=x[index * batch_size::],
                                                  y=[p[index * batch_size::], x[index * batch_size::]])
@@ -181,24 +197,24 @@ class CREC(object):
                 loss = self.model.train_on_batch(x=x[index * batch_size:(index + 1) * batch_size],
                                                  y=[p[index * batch_size:(index + 1) * batch_size],
                                                     x[index * batch_size:(index + 1) * batch_size]])
-                index += 1
+                index += 1'''
 
             # save intermediate model
             if ite % save_interval == 0:
                 # save DCEC model checkpoints
-                print('saving model to:', save_dir + '/dcec_model_' + str(ite) + '.h5')
-                self.model.save_weights(save_dir + '/dcec_model_' + str(ite) + '.h5')
+                print('saving model to:', save_dir + '/crec_model_' + str(ite) + '.h5')
+                self.model.save_weights(save_dir + '/crec_model_' + str(ite) + '.h5')
 
             ite += 1
 
         # save the trained model
         logfile.close()
-        print('saving model to:', save_dir + '/dcec_model_final.h5')
-        self.model.save_weights(save_dir + '/dcec_model_final.h5')
+        print('saving model to:', save_dir + '/crec_model_final.h5')
+        self.model.save_weights(save_dir + '/crec_model_final.h5')
         t3 = time()
         print('Pretrain time:  ', t1 - t0)
         print('Clustering time:', t3 - t1)
-        print('Total time:     ', t3 - t0)'''
+        print('Total time:     ', t3 - t0)
 
 
 
