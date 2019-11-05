@@ -15,7 +15,7 @@ NUM_SAMPLES = FS*2
 NUM_CHANNELS = 32
 
 first_file = 2000+0*(1800)-1
-last_file = first_file + (450)
+last_file = first_file + (150)
 
 aco_in = np.zeros((NUM_SAMPLES*(last_file-first_file), 32))
 

@@ -3,7 +3,7 @@ FS = 12000;
 NUM_SAMPLES = FS*2;     
 NUM_CHANNELS = 32;
 
-bandfilt = designfilt('bandpassfir','FilterOrder',500,'CutoffFrequency1',40,'CutoffFrequency2',1280,'SampleRate',12000);
+bandfilt = designfilt('bandpassfir','FilterOrder',500,'CutoffFrequency1',320,'CutoffFrequency2',640,'SampleRate',12000);
 
 % Set Path to DATA
 prefix = '/Volumes/icex6/ICEX_UNCLASS/ICEX16/macrura/2016-03-13/DURIP/DURIP_20160313T055853/';
@@ -12,7 +12,7 @@ prefix = '/Volumes/icex6/ICEX_UNCLASS/ICEX16/macrura/2016-03-13/DURIP/DURIP_2016
 directory = dir([prefix 'ACO0000*.DAT']);
 
 first_file = 2000+0*(1800/4);
-last_file = first_file + 10;
+last_file = first_file + 450;
  
 % Read DATA
 aco_in = zeros(NUM_SAMPLES * (last_file-first_file), 32);
