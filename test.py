@@ -18,7 +18,7 @@ NUM_SAMPLES = FS*2
 NUM_CHANNELS = 32
 
 first_file = 2000+0*(1800)-1
-last_file = first_file + (450)
+last_file = first_file + (150)
 
 aco_in = np.zeros((NUM_SAMPLES*(last_file-first_file), 32))
 
@@ -90,7 +90,7 @@ scharr = np.array([[ -3-3j, 0-10j,  +3 -3j],[-10+0j, 0+ 0j, +10 +0j],[ -3+3j, 0+
 for i in np.arange(0,10,0.5):
     S = np.zeros((128,128,NUM_CHANNELS))
     for c in range(NUM_CHANNELS):
-        y = np.array(aco_in[int(i*(8*8192)):int((i+1)*(8*8192)-1),c])
+        y = np.array(aco_in[int(i*(8*8192)):int((i+1)*(8*8192)),c])
         S[:,:,c] = librosa.feature.melspectrogram(y=y, sr=FS, n_fft=1024, hop_length=512,fmax=4096)
         for row in range(S.shape[0]):
             S[row,:,c] = S[row,:,c]/np.max(S[row,:,c])
@@ -120,4 +120,30 @@ for i in np.arange(0,10,0.5):
     plt.tight_layout()
     plt.savefig('/Users/Rui/Documents/Graduate/Research/ICEX:SIMI/lstm_eSelect/results1/figure_'+str(i)+'.png')
     plt.clf()
+
+
+# Beamform first, then plot mel-spectrogram
+p = np.array([[0,0,15.3750],[0,0,13.8750],[0,0,12.3750],[0,0,10.8750],[0,0,9.3750],[0,0,7.8750],[0,0,7.1250],[0,0,6.3750],[0,0,5.6250],[0,0,4.8750],[0,0,4.1250],[0,0,3.3750],[0,0,2.6250],[0,0,1.8750],[0,0,1.1250],[0,0,0.3750],[0,0,-0.3750],[0,0,-1.1250],[0,0,-1.8750],[0,0,-2.6250],[0,0,-3.3750],[0,0,-4.1250],[0,0,-4.8750],[0,0,-5.6250],[0,0,-6.3750],[0,0,-7.1250],[0,0,-7.8750],[0,0,-9.3750],[0,0,-10.8750],[0,0,-12.3750],[0,0,-13.8750],[0,0,-15.3750]])
+
+data = aco_in[0:(8*8192),:]
+FS = 12000
+elev = np.arange(-90,91,1)
+az = 0
+c = 1435
+fft_window = np.hanning(1026)
+fft_window = np.delete(fft_window,[0,1025])
+overlap = 0.5
+NFFT = 1024
+f_range = (40,2048)
+weighting= 'icex_hanning'
+
+beamform_output,t,flist = beamform_3D(data, p, FS, elev, az, c, f_range, fft_window, NFFT, overlap=0.5, weighting='icex_hanning')
+
+S = beamform_output[:,100,0,:].T
+for row in range(S.shape[0]):
+    S[row,:] = S[row,:]/np.max(S[row,:])
+librosa.display.specshow(10*np.log10(beamform_output[:,100,0,:].T), x_axis='time',y_axis='mel', sr=FS,fmin=40,fmax=2048)
+plt.colorbar()
+plt.tight_layout()
+plt.show()
 
