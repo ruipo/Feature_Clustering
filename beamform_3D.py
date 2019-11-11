@@ -72,7 +72,7 @@ def beamform_3D(data, p, FS, elev, az, c, f_range, fft_window, NFFT, overlap=0.5
 
 	# Formate Data
 	win_start = int(np.round(win_len-win_len*overlap))
-	num_win = int(np.round(np.shape(data)[0]/win_start)-1)
+	num_win = int(np.round(np.shape(data)[0]/win_start))
 	beamform_output = np.zeros((num_win,num_elev,num_az,NFFT))
 	t = np.zeros((num_win,1))
 
@@ -84,6 +84,11 @@ def beamform_3D(data, p, FS, elev, az, c, f_range, fft_window, NFFT, overlap=0.5
 
 	ts_f_mat = np.zeros((NFFT,N,num_win),dtype=complex)
 	for l in range(num_win):
+
+		if fft_window.shape[0] != np.shape(data[l*win_start:l*win_start+win_len,:])[0]:
+			diff = fft_window.shape[0] - np.shape(data[l*win_start:l*win_start+win_len,:])[0]
+			data = np.vstack((data,np.zeros((diff,N))))
+
 		ts_f_mat[:,:,l] = (1/(np.sqrt(FS)*np.linalg.norm(fft_window[:,0])))*np.sqrt(2)*chirpz(fft_window*data[l*win_start:l*win_start+win_len,:],NFFT,w,a)
 		t[l] = (l*win_start+win_len/2)/FS
 
@@ -95,7 +100,7 @@ def beamform_3D(data, p, FS, elev, az, c, f_range, fft_window, NFFT, overlap=0.5
 
 	# linear window
 	if weighting == 'uniform':
-		win = np.ones((1,N))
+		win = np.ones((N,))
 		win = win/np.linalg.norm(win)
 		win = np.expand_dims(win,axis = 0)
 
@@ -116,6 +121,7 @@ def beamform_3D(data, p, FS, elev, az, c, f_range, fft_window, NFFT, overlap=0.5
 	# build steering vectors
 	for j in range(int(num_az)):
 		for mm in range(int(num_elev)):
+
 			s = np.sin(beam_elev[mm])*np.cos(beam_az[j])*p[:,0]+np.sin(beam_elev[mm])*np.sin(beam_az[j])*p[:,1]+np.cos(beam_elev[mm])*p[:,2]
 			s = np.expand_dims(s,axis=0)
 			steer = np.exp(1j * np.matmul(k,s))
@@ -125,6 +131,7 @@ def beamform_3D(data, p, FS, elev, az, c, f_range, fft_window, NFFT, overlap=0.5
 
 			#beamform
 			for l in range(num_win):
+				
 				b_elem = np.sum((np.conj(steer)*ts_f_mat[:,:,l]),axis = 1)
 				beamform_output[l,mm,j,:] = np.abs(b_elem)**2
 
