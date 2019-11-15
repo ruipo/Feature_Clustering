@@ -131,8 +131,8 @@ def beamform_3D(data, p, FS, elev, az, c, f_range, fft_window, NFFT, overlap=0.5
 
 			#beamform
 			for l in range(num_win):
-				
-				b_elem = np.sum((np.conj(steer)*ts_f_mat[:,:,l]),axis = 1)
+
+				b_elem = np.prod((np.conj(steer)*ts_f_mat[:,:,l]),axis = 1)**(2/N)
 				beamform_output[l,mm,j,:] = np.abs(b_elem)**2
 
 	return beamform_output,t,flist
