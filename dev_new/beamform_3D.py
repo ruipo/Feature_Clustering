@@ -1,4 +1,5 @@
 import numpy as np
+import scipy as sp
 
 def chirpz(x,k,w,a):
     """Compute the chirp z-transform.
@@ -47,6 +48,36 @@ def chirpz(x,k,w,a):
 
     return g
 
+
+
+def beampattern(p,c,flist,win,phi_vec = np.zeros(1),theta_vec=np.linspace(0,3.14159,101),phis = 0,thetas = 3.14159/2):
+	B = np.zeros((phi_vec.shape[0],theta_vec.shape[0],flist.shape[0]))
+	k = 2*np.pi*flist/c
+	k = np.expand_dims(k, axis=1)
+
+	ss = np.sin(thetas)*np.cos(phis)*p[:,0]+np.sin(thetas)*np.sin(phis)*p[:,1]+np.cos(thetas)*p[:,2]
+	ss = np.expand_dims(ss,axis=0)
+
+	for j in range(int(phi_vec.shape[0])):
+		for mm in range(int(theta_vec.shape[0])):
+			s = np.sin(theta_vec[mm])*np.cos(phi_vec[j])*p[:,0]+np.sin(theta_vec[mm])*np.sin(phi_vec[j])*p[:,1]+np.cos(theta_vec[mm])*p[:,2]
+			s = np.expand_dims(s,axis=0)
+
+			steer = np.exp(1j * np.matmul(k,s))
+			steers = np.exp(1j*np.matmul(k,ss))
+
+			#apply weighting
+			steers = steers*(np.matmul(np.ones((np.shape(k)[0],1)),win))
+
+			b_elem = np.sum((np.conj(steers)*steer),axis = 1)
+			B[j,mm,:] = np.abs(b_elem)**2 
+
+	return(B)
+
+
+
+
+
 def beamform_3D(data, p, FS, elev, az, c, f_range, fft_window, NFFT, overlap=0.5, weighting='hanning'):
 
 	# Define Variables
@@ -92,7 +123,6 @@ def beamform_3D(data, p, FS, elev, az, c, f_range, fft_window, NFFT, overlap=0.5
 		ts_f_mat[:,:,l] = (1/(np.sqrt(FS)*np.linalg.norm(fft_window[:,0])))*np.sqrt(2)*chirpz(fft_window*data[l*win_start:l*win_start+win_len,:],NFFT,w,a)
 		t[l] = (l*win_start+win_len/2)/FS
 
-
 	# Start Beamforming
 	flist = np.linspace(f1,f2,NFFT)
 	k = 2*np.pi*flist/c
@@ -118,10 +148,37 @@ def beamform_3D(data, p, FS, elev, az, c, f_range, fft_window, NFFT, overlap=0.5
 		win = win/np.linalg.norm(win)
 		win = np.expand_dims(win,axis = 0)
 
+	Bop = beampattern(p,phi_vec = beam_az,theta_vec=beam_elev,phis = 0,thetas = 3.14159/2,c=c,flist=flist,win=win)
+
+	#anti-alias screen
+	screen_alias = np.zeros((num_elev,flist.shape[0]))
+	
+	if num_az == 1:
+
+		for ff in range(int(flist.shape[0])):
+			screen = sp.signal.find_peaks(Bop[0,:,ff], height=0.5)
+
+			if screen[0].shape[0] > 1:
+
+				mid_ind = np.argmin(np.abs(screen[0]-90))
+
+				if mid_ind>0:
+					cutoff1 = screen[0][mid_ind-1]
+					screen_alias[0:cutoff1+1,ff] = np.float('nan')
+
+				if mid_ind+1<screen[0].shape[0]:
+					cutoff2 = screen[0][mid_ind+1]
+					screen_alias[cutoff2-1:-1,ff] = np.float('nan')
+
+			else:
+				continue
+
+	#print("BEAMFORMING...")			
 	# build steering vectors
 	for j in range(int(num_az)):
-		for mm in range(int(num_elev)):
 
+		for mm in range(int(num_elev)):
+			
 			s = np.sin(beam_elev[mm])*np.cos(beam_az[j])*p[:,0]+np.sin(beam_elev[mm])*np.sin(beam_az[j])*p[:,1]+np.cos(beam_elev[mm])*p[:,2]
 			s = np.expand_dims(s,axis=0)
 			steer = np.exp(1j * np.matmul(k,s))
@@ -132,8 +189,8 @@ def beamform_3D(data, p, FS, elev, az, c, f_range, fft_window, NFFT, overlap=0.5
 			#beamform
 			for l in range(num_win):
 
-				b_elem = np.prod((np.conj(steer)*ts_f_mat[:,:,l]),axis = 1)**(2/N)
-				beamform_output[l,mm,j,:] = np.abs(b_elem)**2
+				b_elem = np.sum((np.conj(steer)*ts_f_mat[:,:,l]),axis = 1)
+				beamform_output[l,mm,j,:] = (np.abs(b_elem)**2) + screen_alias[mm,:]
 
 	return beamform_output,t,flist
 

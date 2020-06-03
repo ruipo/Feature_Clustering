@@ -1,0 +1,9 @@
+*.mat
+*.txt
+*.TXT
+*.fig
+*.png
+old_code/*
+*.klog
+*.alog
+*.pkl
