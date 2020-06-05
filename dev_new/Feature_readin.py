@@ -1,13 +1,13 @@
 ############################### Imports ##################################################
 import os
-curdir = '/Users/Rui/Documents/Graduate/Research/ICEX:SIMI/lstm_eSelect/dev_new/'
+curdir = '/Users/Rui/Documents/Graduate/Research/Feature_Clustering/dev_new/'
 os.chdir(curdir)
 import matplotlib.pyplot as plt 
 import matplotlib.dates as mds
 from save_obj import read_object
 import numpy as np
 
-path = '/Users/Rui/Documents/Graduate/Research/ICEX:SIMI/lstm_eSelect/dev_new/Features/'
+path = '/Users/Rui/Documents/Graduate/Research/Feature_Clustering/dev_new/Features/'
 
 directory = [f for f in os.listdir(path) if f.endswith(".pkl")]
 
@@ -46,6 +46,7 @@ stnb_tbe = []
 stbb_tbe = []
 ltnb_tbe = []
 ltbb_tbe = []
+etype_list = []
 
 for ff in directory:
 
@@ -68,22 +69,27 @@ for ff in directory:
 		stnb_tstart_list.append(Feature.start_t)
 		stbb_tdiff_list.append(Feature.end_t-Feature.start_t)
 		stbb_fdiff_list.append(Feature.end_f-Feature.start_f)
+		etype = 2
 	elif (Feature.end_f-Feature.start_f)<500 and (Feature.end_t-Feature.start_t)>5:
 		lt_nb_list.append(Feature) #long-time-narrow-band
 		stbb_tstart_list.append(Feature.start_t)
 		ltnb_tdiff_list.append(Feature.end_t-Feature.start_t)
 		ltnb_fdiff_list.append(Feature.end_f-Feature.start_f)
+		etype = 3
 	elif (Feature.end_f-Feature.start_f)<500 and (Feature.end_t-Feature.start_t)<=5:
 		st_nb_list.append(Feature) #short-time-narrow-band
 		ltnb_tstart_list.append(Feature.start_t)
 		stnb_tdiff_list.append(Feature.end_t-Feature.start_t)
 		stnb_fdiff_list.append(Feature.end_f-Feature.start_f)
+		etype = 1
 	else:
 		lt_bb_list.append(Feature) #long-time-broad-band
 		ltbb_tstart_list.append(Feature.start_t)
 		ltbb_tdiff_list.append(Feature.end_t-Feature.start_t)
 		ltbb_fdiff_list.append(Feature.end_f-Feature.start_f)
+		etype = 4
 
+	etype_list.append(etype)
 	elevmax_list.append(Feature.elevmax)
 	t_start_list.append(Feature.start_t)
 	t_end_list.append(Feature.end_t)
@@ -122,6 +128,24 @@ for ts in range(len(ltnb_tstart_list[0:-1])):
 ltbb_tstart_list = np.sort(ltbb_tstart_list)
 for ts in range(len(ltbb_tstart_list[0:-1])):
 	ltbb_tbe.append(ltbb_tstart_list[ts+1]-ltbb_tstart_list[ts])
+
+# plot event type with time
+fig = plt.figure(figsize=(20,8))
+plt.plot(mds.epoch2num(t_start_list),etype_list,'.')
+ax = plt.gca()
+ax.xaxis.set_major_formatter(formatter=mds.DateFormatter('%H:%M:%S'))
+plt.xlabel('Event Start Time (Mar. 13, 2016 UTC)',fontsize=15)
+plt.xticks(fontsize=15)
+plt.yticks((1,2,3,4),('stnb', 'stbb','ltnb', 'ltbb'),fontsize=15)
+plt.ylim(0,5)
+plt.ylabel('Event Type',fontsize=15)
+plt.grid()
+fig.autofmt_xdate()
+#plt.show()
+plt.savefig(curdir+'figures/event_type.png')
+plt.clf()
+plt.close()
+
 
 # Plot event duration
 fig1 = plt.figure(figsize=(20,8))
