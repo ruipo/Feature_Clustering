@@ -1,6 +1,6 @@
 ############################### Imports ##################################################
 import os
-curdir = '/Users/Rui/Documents/Graduate/Research/ICEX:SIMI/lstm_eSelect/dev_new/'
+curdir = '/Users/Rui/Documents/Graduate/Research/Feature_clustering/dev_new/'
 os.chdir(curdir)
 
 import numpy as np
@@ -47,7 +47,7 @@ dir_start_eptime = calendar.timegm(time.strptime(dataday+' 05:58:53',\
 
 # Define first and last files to analyze in the directory
 first_file = 1999
-last_file = 2400
+last_file = 2100
 
 #num_stats_file = int(np.ceil(noise_stat_t_win/file_t_win)) # number of files to use for stats
 num_analysis_file = int(np.ceil(analysis_t_win/file_t_win)) # number of files to use for analysis

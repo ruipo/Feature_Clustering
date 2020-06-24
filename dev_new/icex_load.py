@@ -2,7 +2,7 @@ import numpy as np
 from os import listdir
 
 def icex_readin(path, FS = 12000, NUM_CHANNELS = 32, first_file = 2000, last_file = 2450):
-	directory = [f for f in listdir(path) if f.startswith("ACO")]
+	directory = [f for f in np.sort(listdir(path)) if f.startswith("ACO")]
 	NUM_SAMPLES = FS*2
 	aco_in = np.zeros((NUM_SAMPLES*(last_file-first_file), NUM_CHANNELS))
 
