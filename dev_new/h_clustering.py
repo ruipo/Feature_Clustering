@@ -1,8 +1,8 @@
 import numpy as np
 import os
-curdir = '/Users/Rui/Documents/Graduate/Research/ICEX:SIMI/lstm_eSelect/dev_new/'
+curdir = '/Users/Rui/Documents/Graduate/Research/Feature_clustering/dev_new/'
 os.chdir(curdir)
-from Feature import conjoin, dist_metric
+from Feature import conjoin, dist_metric, proximity
 import copy
 
 def h_clustering(Features_list,area_thres,prox_thres):
@@ -37,7 +37,7 @@ def h_clustering(Features_list,area_thres,prox_thres):
 						dist_list.append(1000)
 					else:
 						dist_list.append(dist_metric(f1,f2))
-						#dist_list.append(proximity(f1,f2))
+						#dist_list.append(proximity(f1,f2)) #use proximity instead of custom dist metric
 
 				dist = np.min(dist_list) # f1 hunts f2 thats closest to it
 				if dist <= prox_thres:

@@ -47,7 +47,7 @@ dir_start_eptime = calendar.timegm(time.strptime(dataday+' 05:58:53',\
 
 # Define first and last files to analyze in the directory
 first_file = 1999
-last_file = 2100
+last_file = 2400
 
 #num_stats_file = int(np.ceil(noise_stat_t_win/file_t_win)) # number of files to use for stats
 num_analysis_file = int(np.ceil(analysis_t_win/file_t_win)) # number of files to use for analysis
@@ -240,18 +240,18 @@ while first_file < last_file:
 	ax1 = plt.subplot(1,3,1,autoscale_on=True)
 	librosa.display.specshow(10*np.log10(S),x_coords=tcoords, y_coords=flist,x_axis='time',y_axis='mel', sr=FS, fmax=fmax)
 	cax = plt.colorbar()
-	cax.set_label('dB',labelpad=-30, y=1.05, rotation=0,fontsize=15)
+	cax.set_label('dB',labelpad=-30, y=1.05, rotation=0,fontsize=20,size='large')
 	ax = plt.gca()
 	ax.xaxis.set_major_formatter(formatter=mds.DateFormatter('%H:%M:%S'))
-	plt.xticks(fontsize=15)
-	plt.yticks(np.arange(0, fmax, 192),fontsize=15)
+	plt.xticks(fontsize=20)
+	plt.yticks(np.arange(0, fmax, 192),fontsize=20)
 	plt.clim(110,160)
 	# plt.xlabel('Time')
 	# plt.ylabel('Frequency (Hz)')
 	# plt.title('Conventional')
-	ax1.set_xlabel('Time',fontsize=15)
-	ax1.set_ylabel('Frequency (Hz)',fontsize=15)
-	ax1.set_title('Conventional',fontsize=15)
+	ax1.set_xlabel('Time',fontsize=20)
+	ax1.set_ylabel('Frequency (Hz)',fontsize=20)
+	ax1.set_title('Conventional',fontsize=20)
 
 	# ax2 = plt.subplot(2,4,2,sharey=ax1,autoscale_on=True)
 	# librosa.display.specshow(S_ana_f,x_coords=tcoords, y_coords=flist,x_axis='time',y_axis='mel', sr=FS, fmax=fmax)
@@ -321,18 +321,18 @@ while first_file < last_file:
 	ax2 = plt.subplot(1,3,2,sharey=ax1,autoscale_on=True)
 	librosa.display.specshow(S_ana_log,x_coords=tcoords, y_coords=flist,x_axis='time',y_axis='mel', sr=FS, fmax=fmax)
 	cax = plt.colorbar()
-	cax.set_label('dB',labelpad=-30, y=1.05, rotation=0,fontsize=15)
+	cax.set_label('',labelpad=-30, y=1.05, rotation=0,fontsize=20,size='large')
 	ax = plt.gca()
 	ax.xaxis.set_major_formatter(formatter=mds.DateFormatter('%H:%M:%S'))
-	plt.xticks(fontsize=15)
-	plt.yticks(np.arange(0, fmax, 192),fontsize=15)
+	plt.xticks(fontsize=20)
+	plt.yticks(np.arange(0, fmax, 192),fontsize=20)
 	plt.clim(db_thres,2)
 	# plt.xlabel('Time')
 	# plt.ylabel('')
 	# plt.title('Post-Processing')
-	ax2.set_xlabel('Time',fontsize=15)
-	ax2.set_ylabel('Frequency (Hz)',fontsize=15)
-	ax2.set_title('Post-Processing',fontsize=15)
+	ax2.set_xlabel('Time',fontsize=20)
+	#ax2.set_ylabel('Frequency (Hz)',fontsize=20)
+	ax2.set_title('Post-Processing',fontsize=20)
 
 	# ax8 = plt.subplot(2,4,8,sharey=ax1,autoscale_on=True)
 	# librosa.display.specshow(S_sino,x_coords=tcoords, y_coords=flist,x_axis='time',y_axis='mel', sr=FS, fmax=fmax)
@@ -352,18 +352,18 @@ while first_file < last_file:
 	     
 	  librosa.display.specshow(S_g_log_test,x_coords=tcoords, y_coords=flist,x_axis='time', y_axis='mel', sr=FS, fmax=fmax)
 	  cax = plt.colorbar()
-	  cax.set_label('dB',labelpad=-30, y=1.05, rotation=0,fontsize=15)
+	  cax.set_label('',labelpad=-30, y=1.05, rotation=0,fontsize=20,size='large')
 	  ax = plt.gca()
 	  ax.xaxis.set_major_formatter(formatter=mds.DateFormatter('%H:%M:%S'))
-	  plt.xticks(fontsize=15)
-	  plt.yticks(np.arange(0, fmax, 192),fontsize=15)
+	  plt.xticks(fontsize=20)
+	  plt.yticks(np.arange(0, fmax, 192),fontsize=20)
 	  plt.clim(db_thres,2)
 	  #plt.xlabel('Time')
 	  #plt.ylabel('')
 	  #plt.title('Post-Clustering')
-	  ax3.set_xlabel('Time',fontsize=15)
-	  ax3.set_ylabel('Frequency (Hz)',fontsize=15)
-	  ax3.set_title('Post-Clustering',fontsize=15)
+	  ax3.set_xlabel('Time',fontsize=20)
+	  #ax3.set_ylabel('Frequency (Hz)',fontsize=20)
+	  ax3.set_title('Post-Clustering',fontsize=20)
 
 	  # plot hull
 	  for h in range(len(hull_list)):
@@ -380,7 +380,7 @@ while first_file < last_file:
 	    plt.plot(mds.epoch2num(mean_t),mean_f,'r*')   
 
 	fig.autofmt_xdate()
-	plt.savefig(curdir+'Spectrograms_prox/'+str(first_file)+'_Features.png') # Save saved Feature figure
+	plt.savefig(curdir+'Spectrograms_eps/'+str(first_file)+'_Features.eps') # Save saved Feature figure
 	plt.clf()
 	plt.close()
 

@@ -1,6 +1,6 @@
 import numpy as np
 import os
-curdir = '/Users/Rui/Documents/Graduate/Research/ICEX:SIMI/lstm_eSelect/dev_new/'
+curdir = '/Users/Rui/Documents/Graduate/Research/Feature_clustering/dev_new/'
 os.chdir(curdir)
 from Feature import Feature, conjoin
 
