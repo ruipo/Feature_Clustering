@@ -90,7 +90,7 @@ S_noise_start = np.mean(S_noise,axis=2) # Average over all channels
 f_means_start = np.mean(S_noise,axis=1) # get mean of each f bin in stats data spectrogram
 #f_vars = np.std(S_noise,axis=1) # get variance of each f bin in stats data spectrogram
 
-S_noise = np.mean(S_noise,axis=2) # Average over all channels
+S_noise = np.mean(S_noise,axis=2)
 f_means = np.mean(S_noise,axis=1)
 
 ####################################### Start Analysis #################################################
