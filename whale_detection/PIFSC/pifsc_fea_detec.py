@@ -29,7 +29,7 @@ fmin = 1000 # min frequency to examine
 n_mels = 128 #
 area_thres = 75 # min size of Feature Area to save a Feature
 prox_thres = 5.5 # starting proximity distance when grouping Features together
-mask_thres = 30 # noise level threshold to set 0-1 mask
+mask_thres = 50 # noise level threshold to set 0-1 mask
 num_analysis_file = 1
 
 ###################################### Get Noise Sample ##################################################
@@ -52,7 +52,7 @@ f_means = np.mean(S_noise,axis=1) # get mean of each f bin in stats data spectro
 
 ###################################### Get data Sample ##################################################
 first_file = 0
-last_file = 10
+last_file = 201
 
 while first_file < last_file:
 	print('Working on file: ', first_file)
@@ -129,12 +129,17 @@ while first_file < last_file:
 		# print(ent.area)
 		# print((ent.end_f-ent.start_f)/(ent.end_t-ent.start_t))
 
-		if (ent.area <= area_thres or ((ent.end_f-ent.start_f)/(ent.end_t-ent.start_t)>=100)): # if Feature area <= area_thres or if feature is stbb, set Feature pixels to NaN
+		if (ent.area <= area_thres):# or ((ent.end_f-ent.start_f)/(ent.end_t-ent.start_t)>=100)): # if Feature area <= area_thres or if feature is stbb, set Feature pixels to NaN
 			for p in ent.pixels:
 				S_g_log_test[p] = np.float('nan')
 		else: # else, keep the Feature, add to fFlist, determine its stats, calculate the hull of the Feature
 			for p in ent.pixels:
 				S_noise_cur[p] = np.float('nan')
+
+			if (ent.end_t-ent.start_t <=1.25): #if feature is st, set Feature type to st, else set to wc
+				ent.type = 'st'
+			else:
+				ent.type = 'wc' 
 
 			filtered_Features_list.append(ent)
 			Features_stats.append(ent.stats(flist,tcoords))
@@ -244,6 +249,7 @@ while first_file < last_file:
 	ax2.set_title('Post-Processing',fontsize=20)
 	plt.clim(0,2)
 	plt.ylabel('')
+	plt.grid(True)
 
 	ax3 = plt.subplot(1,3,3,sharey=ax1,autoscale_on=True)
 	if np.where(~np.isnan(S_g_log_test))[0].shape[0]>0:
@@ -261,7 +267,8 @@ while first_file < last_file:
 	  #plt.title('Post-Clustering')
 	  ax3.set_xlabel('Time',fontsize=20)
 	  #ax3.set_ylabel('Frequency (Hz)',fontsize=20)
-	  ax3.set_title('Post-Clustering & Type Filtering',fontsize=20)
+	  ax3.set_title('Post-Clustering & Type Labeling',fontsize=20)
+	  plt.grid(True)
 
 	  # plot hull
 	  for h in range(len(hull_list)):
@@ -273,8 +280,12 @@ while first_file < last_file:
 
 	    mean_t = Features_stats[h][2]
 	    mean_f = Features_stats[h][5]
+	    etype = Features_stats[h][-1]
 
-	    plt.plot(b_x,b_y,'g--')
+	    if etype == 'st':
+	    	plt.plot(b_x,b_y,'g--')
+	    else:
+	    	plt.plot(b_x,b_y,'b--')
 	    plt.plot(mds.epoch2num(mean_t),mean_f,'r*')   
 
 	fig.autofmt_xdate()
@@ -282,5 +293,6 @@ while first_file < last_file:
 	plt.savefig(curdir+'Spectrograms/'+str(first_file)+'_Features.png')
 	plt.clf()
 	plt.close()
+	#plt.show()
 
 	first_file = first_file+num_analysis_file
