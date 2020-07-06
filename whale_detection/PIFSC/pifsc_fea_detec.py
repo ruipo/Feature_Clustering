@@ -27,9 +27,9 @@ hop_length = int(n_fft/2)
 fmax = 1800 # max frequency to examine
 fmin = 1000 # min frequency to examine
 n_mels = 128 #
-area_thres = 75 # min size of Feature Area to save a Feature
+area_thres = 25 # min size of Feature Area to save a Feature
 prox_thres = 5.5 # starting proximity distance when grouping Features together
-mask_thres = 80 # noise level threshold to set 0-1 mask
+mask_thres = 50 # noise level threshold to set 0-1 mask
 num_analysis_file = 1
 
 ###################################### Get Noise Sample ##################################################
@@ -51,7 +51,7 @@ f_means = np.mean(S_noise,axis=1) # get mean of each f bin in stats data spectro
 #f_vars = np.std(S_noise,axis=1) # get variance of each f bin in stats data spectrogram
 
 ###################################### Get data Sample ##################################################
-first_file = 62
+first_file = 0
 last_file = 201
 
 while first_file < last_file:

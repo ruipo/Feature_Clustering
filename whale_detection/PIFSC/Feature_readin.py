@@ -9,7 +9,7 @@ import copy
 
 wc_startt_act = np.loadtxt(curdir+'wc_starttimes.txt')
 
-path = '/Users/Rui/Documents/Graduate/Research/Feature_Clustering/whale_detection/PIFSC/Features/'
+path = '/Users/Rui/Documents/Graduate/Research/Feature_Clustering/whale_detection/PIFSC/Features_mt30/'
 
 directory = [f for f in os.listdir(path) if f.endswith(".pkl")]
 
@@ -18,8 +18,8 @@ st_startt = []
 
 for ff in directory:
 	Feature = read_object(path+ff)
-	if Feature.type == 'wc':
-	#if Feature.end_t-Feature.start_t>1.25:
+	#if Feature.type == 'wc':
+	if Feature.end_t-Feature.start_t>0:
 		wc_startt.append(Feature.start_t)
 	else:
 		st_startt.append(Feature.start_t)
@@ -62,4 +62,20 @@ plt.plot(wc_startt,np.ones(len(wc_startt)),'b*')
 plt.plot(wc_startt_act,1.1*np.ones(len(wc_startt_act)),'r*')
 plt.ylim(0,10)
 plt.grid(True)
+plt.show()
+
+
+
+fpr = [0.001,	0.0945,	0.139,	0.215,	1]
+tpr = [0.001,	0.633,	0.709,	0.735,	1]
+plt.plot(fpr,tpr,'b.')
+x = np.linspace(0.000001,1,10000)
+y = 0.14269*np.log(x)+0.9802
+plt.plot(x,y,'b-')
+plt.grid(True)
+plt.xlim(0,1)
+plt.ylim(0,1)
+plt.xlabel('False Positive Rate',fontsize=20)
+plt.ylabel('True Positive Rate',fontsize=20)
+plt.title('ROC Curve [AUG = 0.84]',fontsize=20)
 plt.show()
