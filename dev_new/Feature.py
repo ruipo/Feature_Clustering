@@ -71,7 +71,7 @@ class Feature():
 		self.end_t = max_t
 		diff_t = max_t-min_t
 
-		return(max_t, min_t, mean_t,max_f,min_f,mean_f)
+		return(max_t, min_t, mean_t,max_f,min_f,mean_f,self.type)
 
 
 def conjoin(list):

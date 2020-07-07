@@ -47,7 +47,7 @@ dir_start_eptime = calendar.timegm(time.strptime(dataday+' 05:58:53',\
 
 # Define first and last files to analyze in the directory
 first_file = 1999
-last_file = 2400
+last_file = 17000
 
 #num_stats_file = int(np.ceil(noise_stat_t_win/file_t_win)) # number of files to use for stats
 num_analysis_file = int(np.ceil(analysis_t_win/file_t_win)) # number of files to use for analysis
@@ -59,9 +59,9 @@ fmax = 2048 # max frequency to examine
 n_mels = 128 # number of frequency bin in mel-spectrogram
 
 # Feature Detection Variables
-area_thres = 5 # min size of Feature Area to save a Feature
+area_thres = 20 # min size of Feature Area to save a Feature
 prox_thres = 5.5 # starting proximity distance when grouping Features together
-db_thres = 1.5 # value above db_thres number of times f_mean
+mask_thres = 17 # value above db_thres number of times f_mean
 
 # Beamform Feature
 # Array geometry
@@ -121,7 +121,7 @@ while first_file < last_file:
 	S = np.mean(S,axis=2) # Average over all channels
 	#f_means = np.mean(S,axis=1) # get mean of each f bin in stats data spectrogram
 	#f_vars = np.std(S,axis=1) # get variance of each f bin in stats data spectrogram
-	np.savetxt(curdir+'input/'+str(time_data[0])+'_input.txt',S)
+	np.savetxt(curdir+'input_new/'+str(time_data[0])+'_input.txt',S)
 
 	# Analysis Data Mel-Spectrogram calculation
 
@@ -130,7 +130,7 @@ while first_file < last_file:
 	tlist = (1/FS)*np.linspace(0,np.shape(aco_in)[0],num_nfft_tot) # get list of times for spectrogram x-axis
 	tcoords = mds.epoch2num(tlist+time_data[0]) # get time coordinates for spectrogram x-axis (NOT EPOCH TIME!)
 
-	S = cv2.GaussianBlur(S,ksize=(5,5),sigmaX=1,sigmaY=1) 
+	S = cv2.GaussianBlur(S,ksize=(3,3),sigmaX=1,sigmaY=1) 
 	S_ana_f = copy.deepcopy(S)
 
 	for row in range(S.shape[0]): # normalize each frequency bin to zero mean and unit variance
@@ -140,16 +140,16 @@ while first_file < last_file:
 	S_ana_grady = cv2.Sobel(S_ana_f,cv2.CV_64F,0,1,ksize=5)
 	S_ana_gradl = np.maximum(np.abs(S_ana_gradx),np.abs(S_ana_grady))
 	S_ana_gradl = cv2.morphologyEx(S_ana_gradl, cv2.MORPH_OPEN, np.ones((3, 3)))
-	close_mask = cv2.morphologyEx(S_ana_gradl, cv2.MORPH_CLOSE, np.ones((5, 5)))
+	close_mask = cv2.morphologyEx(S_ana_gradl, cv2.MORPH_CLOSE, np.ones((3, 3)))
 
-	close_mask[close_mask<=8] = 0
+	close_mask[close_mask<=mask_thres] = 0
 	close_mask[close_mask!=0] = 1
 
 	#S_ana_f[S_ana_f <= 0] = float('nan') # change all values below 0 to NaN
 	S_ana_log = copy.deepcopy(S_ana_f) # calculate log value of ana spectrogram
 	S_ana_log = S_ana_log*close_mask
 	#S_ana_logt = copy.deepcopy(S_ana_log)
-	S_ana_log[S_ana_log <= db_thres] = float('nan') # set all values in S_ana_log that are < db_thres to NaN
+	S_ana_log[S_ana_log <= 0] = float('nan') # set all values in S_ana_log that are < db_thres to NaN
 	S_ana_log[0:9,:] = float('nan')
 
 	# S_ana_logt[S_ana_logt <= db_thres] = 0
@@ -214,18 +214,28 @@ while first_file < last_file:
 	  		S_g_log_test[(x_ind,y_ind)] = np.float('nan')
 
 	for ent in Features_list: # For each Feature
-	  if ent.area <= area_thres: # if Feature area <= area_thres, set Feature pixels to NaN
-	    for p in ent.pixels:
-	    	S_g_log_test[p] = np.float('nan')
-	  else: # else, keep the Feature, add to fFlist, determine its stats, calculate the hull of the Feature
-	    for p in ent.pixels:
-	      S_noise_cur[p] = np.float('nan')
+		ent.stats(flist,tcoords)
+		if ent.area <= area_thres: # if Feature area <= area_thres, set Feature pixels to NaN
+		  for p in ent.pixels:
+		  	S_g_log_test[p] = np.float('nan')
+		else: # else, keep the Feature, add to fFlist, determine its stats, calculate the hull of the Feature
+		  for p in ent.pixels:
+		    S_noise_cur[p] = np.float('nan')
 
-	    filtered_Features_list.append(ent)
-	    Features_stats.append(ent.stats(flist,tcoords))
-	    hull = convex_hull.convex_hull(np.array(ent.pixels).T)
-	    hull = np.vstack((hull, hull[0]))
-	    hull_list.append(hull)
+		  if (ent.end_t-ent.start_t <=5) and (ent.end_f-ent.start_f <=200): #if feature is st, set Feature type to st, else set to wc
+		  	ent.type = 'stnb'
+		  elif (ent.end_t-ent.start_t <=5) and (ent.end_f-ent.start_f > 200):
+		  	ent.type = 'stbb'
+		  elif (ent.end_t-ent.start_t > 5) and (ent.end_f-ent.start_f > 200):
+		  	ent.type = 'ltbb'
+		  else:
+		  	ent.type = 'ltnb' 
+
+		  filtered_Features_list.append(ent)
+		  Features_stats.append(ent.stats(flist,tcoords))
+		  hull = convex_hull.convex_hull(np.array(ent.pixels).T)
+		  hull = np.vstack((hull, hull[0]))
+		  hull_list.append(hull)
 
 	# Set noise level for next iteration
 	f_means_cur = np.nanmean(S_noise_cur,axis=1)
@@ -233,7 +243,7 @@ while first_file < last_file:
 	f_means = 0.5*f_means+0.5*f_means_cur
 	#f_vars = 0.5*f_vars+0.5*f_vars_cur
 
-	#np.savetxt(curdir+'output/'+str(time_data[0])+'_output.txt',~np.isnan(S_g_log_test))
+	np.savetxt(curdir+'output_new/'+str(time_data[0])+'_output.txt',~np.isnan(S_g_log_test))
 	# Plot Saved Features
 	fig = plt.figure(figsize=(20,8))
 
@@ -245,7 +255,7 @@ while first_file < last_file:
 	ax.xaxis.set_major_formatter(formatter=mds.DateFormatter('%H:%M:%S'))
 	plt.xticks(fontsize=20)
 	plt.yticks(np.arange(0, fmax, 192),fontsize=20)
-	plt.clim(110,160)
+	plt.clim(110,150)
 	# plt.xlabel('Time')
 	# plt.ylabel('Frequency (Hz)')
 	# plt.title('Conventional')
@@ -319,20 +329,22 @@ while first_file < last_file:
 	# plt.title('mask')
 
 	ax2 = plt.subplot(1,3,2,sharey=ax1,autoscale_on=True)
-	librosa.display.specshow(S_ana_log,x_coords=tcoords, y_coords=flist,x_axis='time',y_axis='mel', sr=FS, fmax=fmax)
-	cax = plt.colorbar()
-	cax.set_label('',labelpad=-30, y=1.05, rotation=0,fontsize=20,size='large')
-	ax = plt.gca()
-	ax.xaxis.set_major_formatter(formatter=mds.DateFormatter('%H:%M:%S'))
-	plt.xticks(fontsize=20)
-	plt.yticks(np.arange(0, fmax, 192),fontsize=20)
-	plt.clim(db_thres,2)
-	# plt.xlabel('Time')
-	# plt.ylabel('')
-	# plt.title('Post-Processing')
-	ax2.set_xlabel('Time',fontsize=20)
-	#ax2.set_ylabel('Frequency (Hz)',fontsize=20)
-	ax2.set_title('Post-Processing',fontsize=20)
+	if np.where(~np.isnan(S_ana_log))[0].shape[0]>0:
+		librosa.display.specshow(S_ana_log,x_coords=tcoords, y_coords=flist,x_axis='time',y_axis='mel', sr=FS, fmax=fmax)
+		cax = plt.colorbar()
+		cax.set_label('',labelpad=-30, y=1.05, rotation=0,fontsize=20,size='large')
+		ax = plt.gca()
+		ax.xaxis.set_major_formatter(formatter=mds.DateFormatter('%H:%M:%S'))
+		plt.xticks(fontsize=20)
+		plt.yticks(np.arange(0, fmax, 192),fontsize=20)
+		plt.clim(0.5,2)
+		# plt.xlabel('Time')
+		plt.ylabel('')
+		# plt.title('Post-Processing')
+		ax2.set_xlabel('Time',fontsize=20)
+		#ax2.set_ylabel('Frequency (Hz)',fontsize=20)
+		ax2.set_title('Post-Processing',fontsize=20)
+		plt.grid(True)
 
 	# ax8 = plt.subplot(2,4,8,sharey=ax1,autoscale_on=True)
 	# librosa.display.specshow(S_sino,x_coords=tcoords, y_coords=flist,x_axis='time',y_axis='mel', sr=FS, fmax=fmax)
@@ -357,13 +369,14 @@ while first_file < last_file:
 	  ax.xaxis.set_major_formatter(formatter=mds.DateFormatter('%H:%M:%S'))
 	  plt.xticks(fontsize=20)
 	  plt.yticks(np.arange(0, fmax, 192),fontsize=20)
-	  plt.clim(db_thres,2)
+	  plt.clim(0.5,2)
 	  #plt.xlabel('Time')
-	  #plt.ylabel('')
+	  plt.ylabel('')
 	  #plt.title('Post-Clustering')
 	  ax3.set_xlabel('Time',fontsize=20)
 	  #ax3.set_ylabel('Frequency (Hz)',fontsize=20)
-	  ax3.set_title('Post-Clustering',fontsize=20)
+	  ax3.set_title('Post-Clustering and Type Labeling',fontsize=20)
+	  plt.grid(True)
 
 	  # plot hull
 	  for h in range(len(hull_list)):
@@ -375,12 +388,20 @@ while first_file < last_file:
 
 	    mean_t = Features_stats[h][2]
 	    mean_f = Features_stats[h][5]
+	    etype = Features_stats[h][-1]
 
-	    plt.plot(b_x,b_y,'g--')
+	    if etype == 'stbb':
+	    	plt.plot(b_x,b_y,'g--')
+	    elif etype == 'stnb':
+	    	plt.plot(b_x,b_y,'b--')
+	    elif etype == 'ltbb':
+	    	plt.plot(b_x,b_y,'r--')
+	    else:
+	    	plt.plot(b_x,b_y,'k--')
 	    plt.plot(mds.epoch2num(mean_t),mean_f,'r*')   
 
 	fig.autofmt_xdate()
-	plt.savefig(curdir+'Spectrograms_eps/'+str(first_file)+'_Features.eps') # Save saved Feature figure
+	plt.savefig(curdir+'Spectrograms_new/'+str(first_file)+'_Features.png') # Save saved Feature figure
 	plt.clf()
 	plt.close()
 
@@ -430,7 +451,7 @@ while first_file < last_file:
 		    # find max elevation angle
 		    indmax = np.argmax(beamform_output_avg) 
 		    Feat_current.elevmax = elev[indmax]
-		    save_object(Feat_current,curdir+'Features/'+str(Feat_current.start_t)+'.pkl')
+		    save_object(Feat_current,curdir+'Features_new/'+str(Feat_current.start_t)+'.pkl')
 
 		    # Plot
 		    fig1 = plt.figure(figsize=(20,8))
@@ -453,7 +474,7 @@ while first_file < last_file:
 		    plt.title(str(Feat_current.start_t))
 		    plt.grid()
 
-		    plt.savefig(curdir+'Beamforming/'+str(Feat_current.start_t)+'_bf.png')
+		    plt.savefig(curdir+'Beamforming_new/'+str(Feat_current.start_t)+'_bf.png')
 		    plt.clf()
 		    plt.close()
 		  
