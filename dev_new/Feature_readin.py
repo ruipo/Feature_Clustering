@@ -7,7 +7,7 @@ import matplotlib.dates as mds
 from save_obj import read_object
 import numpy as np
 
-path = '/Users/Rui/Documents/Graduate/Research/Feature_Clustering/dev_new/Features/'
+path = '/Users/Rui/Documents/Graduate/Research/Feature_Clustering/dev_new/Features_new/'
 
 directory = [f for f in os.listdir(path) if f.endswith(".pkl")]
 
@@ -47,47 +47,52 @@ stbb_tbe = []
 ltnb_tbe = []
 ltbb_tbe = []
 etype_list = []
-
+ 
 for ff in directory:
 
 	Feature = read_object(path+ff)
 
-	if Feature.end_f < 160:
-		endf_below_160hz = endf_below_160hz+1
-	elif 160<= Feature.end_f <320:
-		endf_160_320hz = endf_160_320hz+1
-	elif 320<= Feature.end_f <640:
-		endf_320_640hz = endf_320_640hz+1
-	elif 640<= Feature.end_f <1280:
-		endf_640_1280hz = endf_640_1280hz+1
+	if Feature.start_t > 1457881288 and (Feature.end_t-Feature.start_t)>25:
+		continue
 	else:
-		endf_1280_2048hz = endf_1280_2048hz+1
+		if Feature.end_f < 160:
+			endf_below_160hz = endf_below_160hz+1
+		elif 160<= Feature.end_f <320:
+			endf_160_320hz = endf_160_320hz+1
+		elif 320<= Feature.end_f <640:
+			endf_320_640hz = endf_320_640hz+1
+		elif 640<= Feature.end_f <1280:
+			endf_640_1280hz = endf_640_1280hz+1
+		else:
+			endf_1280_2048hz = endf_1280_2048hz+1
 
-
-	if (Feature.end_f-Feature.start_f)>=500 and (Feature.end_t-Feature.start_t)<=5:
-		st_bb_list.append(Feature)#short-time-broad-band
-		stnb_tstart_list.append(Feature.start_t)
-		stbb_tdiff_list.append(Feature.end_t-Feature.start_t)
-		stbb_fdiff_list.append(Feature.end_f-Feature.start_f)
-		etype = 2
-	elif (Feature.end_f-Feature.start_f)<500 and (Feature.end_t-Feature.start_t)>5:
-		lt_nb_list.append(Feature) #long-time-narrow-band
-		stbb_tstart_list.append(Feature.start_t)
-		ltnb_tdiff_list.append(Feature.end_t-Feature.start_t)
-		ltnb_fdiff_list.append(Feature.end_f-Feature.start_f)
-		etype = 3
-	elif (Feature.end_f-Feature.start_f)<500 and (Feature.end_t-Feature.start_t)<=5:
-		st_nb_list.append(Feature) #short-time-narrow-band
-		ltnb_tstart_list.append(Feature.start_t)
-		stnb_tdiff_list.append(Feature.end_t-Feature.start_t)
-		stnb_fdiff_list.append(Feature.end_f-Feature.start_f)
-		etype = 1
-	else:
-		lt_bb_list.append(Feature) #long-time-broad-band
-		ltbb_tstart_list.append(Feature.start_t)
-		ltbb_tdiff_list.append(Feature.end_t-Feature.start_t)
-		ltbb_fdiff_list.append(Feature.end_f-Feature.start_f)
-		etype = 4
+		if (Feature.type == 'stbb'):
+		#if (Feature.end_f-Feature.start_f)>=500 and (Feature.end_t-Feature.start_t)<=5:
+			st_bb_list.append(Feature)#short-time-broad-band
+			stnb_tstart_list.append(Feature.start_t)
+			stbb_tdiff_list.append(Feature.end_t-Feature.start_t)
+			stbb_fdiff_list.append(Feature.end_f-Feature.start_f)
+			etype = 2
+		elif (Feature.type == 'ltnb'):
+		#elif (Feature.end_f-Feature.start_f)<500 and (Feature.end_t-Feature.start_t)>5:
+			lt_nb_list.append(Feature) #long-time-narrow-band
+			stbb_tstart_list.append(Feature.start_t)
+			ltnb_tdiff_list.append(Feature.end_t-Feature.start_t)
+			ltnb_fdiff_list.append(Feature.end_f-Feature.start_f)
+			etype = 3
+		elif (Feature.type == 'stnb'):
+		#elif (Feature.end_f-Feature.start_f)<500 and (Feature.end_t-Feature.start_t)<=5:
+			st_nb_list.append(Feature) #short-time-narrow-band
+			ltnb_tstart_list.append(Feature.start_t)
+			stnb_tdiff_list.append(Feature.end_t-Feature.start_t)
+			stnb_fdiff_list.append(Feature.end_f-Feature.start_f)
+			etype = 1
+		else:
+			lt_bb_list.append(Feature) #long-time-broad-band
+			ltbb_tstart_list.append(Feature.start_t)
+			ltbb_tdiff_list.append(Feature.end_t-Feature.start_t)
+			ltbb_fdiff_list.append(Feature.end_f-Feature.start_f)
+			etype = 4
 
 	etype_list.append(etype)
 	elevmax_list.append(Feature.elevmax)
@@ -134,15 +139,16 @@ fig = plt.figure(figsize=(20,8))
 plt.plot(mds.epoch2num(t_start_list),etype_list,'.')
 ax = plt.gca()
 ax.xaxis.set_major_formatter(formatter=mds.DateFormatter('%H:%M:%S'))
-plt.xlabel('Event Start Time (Mar. 13, 2016 UTC)',fontsize=15)
-plt.xticks(fontsize=15)
-plt.yticks((1,2,3,4),('stnb', 'stbb','ltnb', 'ltbb'),fontsize=15)
+plt.xlabel('Event Start Time (Mar. 13, 2016 UTC)',fontsize=20)
+plt.xticks(fontsize=20)
+plt.yticks((1,2,3,4),('stnb', 'stbb','ltnb', 'ltbb'),fontsize=20)
 plt.ylim(0,5)
-plt.ylabel('Event Type',fontsize=15)
+plt.ylabel('Event Type',fontsize=20)
 plt.grid()
+plt.xlim(mds.epoch2num(np.min(t_start_list)),mds.epoch2num(np.max(t_start_list)))
 fig.autofmt_xdate()
 #plt.show()
-plt.savefig(curdir+'figures/event_type.png')
+plt.savefig(curdir+'figures/event_type.eps')
 plt.clf()
 plt.close()
 
@@ -206,6 +212,7 @@ plt.ylim(-45,45)
 plt.ylabel('Max Beamform Elevation (Deg.)',fontsize=20)
 plt.grid()
 fig.autofmt_xdate()
+#plt.show()
 plt.savefig(curdir+'figures/event_maxelev.eps')
 plt.clf()
 plt.close()
@@ -238,24 +245,26 @@ plt.close()
 fig1 = plt.figure(figsize=(20,8))
 plt.subplot(1,2,1,autoscale_on=True)
 plt.hist([stnb_tdiff_list,stbb_tdiff_list,ltnb_tdiff_list,ltbb_tdiff_list],bins=150,histtype='bar',color=['green','blue','red','orange'], edgecolor='black',stacked=1)
-plt.xlabel('Event Duation (Sec)',fontsize=15)
-plt.xticks(fontsize=15)
-plt.yticks(fontsize=15)
-plt.ylabel('Count',fontsize=15)
+plt.xlabel('Event Duation (Sec)',fontsize=20)
+plt.xticks(fontsize=20)
+plt.yticks(fontsize=20)
+plt.ylabel('Count',fontsize=20)
 plt.yscale('log')
-plt.legend(('stnb', 'stbb', 'ltnb', 'ltbb'))
+plt.legend(('stnb', 'stbb', 'ltnb', 'ltbb'),prop={'size':15})
 plt.grid()
+plt.xlim(0,30)
 
 plt.subplot(1,2,2,autoscale_on=True)
 plt.hist([stnb_tdiff_list,stbb_tdiff_list,ltnb_tdiff_list,ltbb_tdiff_list],bins=150,histtype='bar',color=['green','blue','red','orange'], edgecolor='black',density=1,cumulative=1,stacked=1)
-plt.xlabel('Event Duration (Sec)',fontsize=15)
-plt.xticks(fontsize=15)
-plt.yticks(fontsize=15)
-plt.ylabel('Cumulative Density',fontsize=15)
-plt.legend(('stnb', 'stbb', 'ltnb', 'ltbb'))
+plt.xlabel('Event Duration (Sec)',fontsize=20)
+plt.xticks(fontsize=20)
+plt.yticks(fontsize=20)
+plt.ylabel('Cumulative Density',fontsize=20)
+plt.legend(('stnb', 'stbb', 'ltnb', 'ltbb'),prop={'size':15},loc='lower right')
 plt.grid()
+plt.xlim(0,30)
 
-plt.savefig(curdir+'figures/event_druation_stacked.png')
+plt.savefig(curdir+'figures/event_druation_stacked.eps')
 plt.clf()
 plt.close()
 
@@ -263,24 +272,24 @@ plt.close()
 fig1 = plt.figure(figsize=(20,8))
 plt.subplot(1,2,1,autoscale_on=True)
 plt.hist([stnb_fdiff_list,stbb_fdiff_list,ltnb_fdiff_list,ltbb_fdiff_list],bins=150,histtype='bar',color=['green','blue','red','orange'], edgecolor='black',stacked=1)
-plt.xlabel('Frequency Bandwidth (Hz)',fontsize=15)
-plt.xticks(fontsize=15)
-plt.yticks(fontsize=15)
-plt.ylabel('Count',fontsize=15)
+plt.xlabel('Frequency Bandwidth (Hz)',fontsize=20)
+plt.xticks(fontsize=20)
+plt.yticks(fontsize=20)
+plt.ylabel('Count',fontsize=20)
 plt.yscale('log')
-plt.legend(('stnb', 'stbb', 'ltnb', 'ltbb'))
+plt.legend(('stnb', 'stbb', 'ltnb', 'ltbb'),prop={'size':15})
 plt.grid()
 
 plt.subplot(1,2,2,autoscale_on=True)
 plt.hist([stnb_fdiff_list,stbb_fdiff_list,ltnb_fdiff_list,ltbb_fdiff_list],bins=150,histtype='bar',color=['green','blue','red','orange'], edgecolor='black',density=1,cumulative=1,stacked=1)
-plt.xlabel('Frequency Bandwidth (Hz)',fontsize=15)
-plt.xticks(fontsize=15)
-plt.yticks(fontsize=15)
-plt.ylabel('Cumulative Density',fontsize=15)
-plt.legend(('stnb', 'stbb', 'ltnb', 'ltbb'))
+plt.xlabel('Frequency Bandwidth (Hz)',fontsize=20)
+plt.xticks(fontsize=20)
+plt.yticks(fontsize=20)
+plt.ylabel('Cumulative Density',fontsize=20)
+plt.legend(('stnb', 'stbb', 'ltnb', 'ltbb'),prop={'size':15})
 plt.grid()
 
-plt.savefig(curdir+'figures/event_bandwidth_stacked.png')
+plt.savefig(curdir+'figures/event_bandwidth_stacked.eps')
 plt.clf()
 plt.close()
 
@@ -288,25 +297,25 @@ plt.close()
 fig1 = plt.figure(figsize=(20,8))
 plt.subplot(1,2,1,autoscale_on=True)
 plt.hist([stnb_tbe,stbb_tbe,ltnb_tbe,ltbb_tbe],bins=150,histtype='bar',color=['green','blue','red','orange'], edgecolor='black',stacked=1)
-plt.xlabel('Time Between Events (Sec)',fontsize=15)
-plt.xticks(fontsize=15)
-plt.yticks(fontsize=15)
-plt.ylabel('Count',fontsize=15)
+plt.xlabel('Time Between Events (Sec)',fontsize=20)
+plt.xticks(fontsize=20)
+plt.yticks(fontsize=20)
+plt.ylabel('Count',fontsize=20)
 plt.yscale('log')
-plt.xlim([0,500])
-plt.legend(('stnb', 'stbb', 'ltnb', 'ltbb'))
+plt.xlim([0,1000])
+plt.legend(('stnb', 'stbb', 'ltnb', 'ltbb'),prop={'size':15})
 plt.grid()
 
 plt.subplot(1,2,2,autoscale_on=True)
 plt.hist([stnb_tbe,stbb_tbe,ltnb_tbe,ltbb_tbe],bins=150,histtype='bar',color=['green','blue','red','orange'], edgecolor='black',density=1,cumulative=1,stacked=1)
-plt.xlabel('Time Between Events (Sec)',fontsize=15)
-plt.xticks(fontsize=15)
-plt.yticks(fontsize=15)
-plt.ylabel('Cumulative Density',fontsize=15)
-plt.legend(('stnb', 'stbb', 'ltnb', 'ltbb'))
-plt.xlim([0,500])
+plt.xlabel('Time Between Events (Sec)',fontsize=20)
+plt.xticks(fontsize=20)
+plt.yticks(fontsize=20)
+plt.ylabel('Cumulative Density',fontsize=20)
+plt.legend(('stnb', 'stbb', 'ltnb', 'ltbb'),prop={'size':15})
+plt.xlim([0,1000])
 plt.grid()
 
-plt.savefig(curdir+'figures/event_tbe_stacked.png')
+plt.savefig(curdir+'figures/event_tbe_stacked.eps')
 plt.clf()
 plt.close()
