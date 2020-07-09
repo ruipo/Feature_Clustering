@@ -47,6 +47,10 @@ stbb_tbe = []
 ltnb_tbe = []
 ltbb_tbe = []
 etype_list = []
+stbb_elevmax_list = []
+ltbb_elevmax_list = []
+stnb_elevmax_list = []
+ltnb_elevmax_list = []
  
 for ff in directory:
 
@@ -69,30 +73,34 @@ for ff in directory:
 		if (Feature.type == 'stbb'):
 		#if (Feature.end_f-Feature.start_f)>=500 and (Feature.end_t-Feature.start_t)<=5:
 			st_bb_list.append(Feature)#short-time-broad-band
-			stnb_tstart_list.append(Feature.start_t)
+			stbb_tstart_list.append(Feature.start_t)
 			stbb_tdiff_list.append(Feature.end_t-Feature.start_t)
 			stbb_fdiff_list.append(Feature.end_f-Feature.start_f)
 			etype = 2
+			stbb_elevmax_list.append(Feature.elevmax)
 		elif (Feature.type == 'ltnb'):
 		#elif (Feature.end_f-Feature.start_f)<500 and (Feature.end_t-Feature.start_t)>5:
 			lt_nb_list.append(Feature) #long-time-narrow-band
-			stbb_tstart_list.append(Feature.start_t)
+			ltnb_tstart_list.append(Feature.start_t)
 			ltnb_tdiff_list.append(Feature.end_t-Feature.start_t)
 			ltnb_fdiff_list.append(Feature.end_f-Feature.start_f)
 			etype = 3
+			ltnb_elevmax_list.append(Feature.elevmax)
 		elif (Feature.type == 'stnb'):
 		#elif (Feature.end_f-Feature.start_f)<500 and (Feature.end_t-Feature.start_t)<=5:
 			st_nb_list.append(Feature) #short-time-narrow-band
-			ltnb_tstart_list.append(Feature.start_t)
+			stnb_tstart_list.append(Feature.start_t)
 			stnb_tdiff_list.append(Feature.end_t-Feature.start_t)
 			stnb_fdiff_list.append(Feature.end_f-Feature.start_f)
 			etype = 1
+			stnb_elevmax_list.append(Feature.elevmax)
 		else:
 			lt_bb_list.append(Feature) #long-time-broad-band
 			ltbb_tstart_list.append(Feature.start_t)
 			ltbb_tdiff_list.append(Feature.end_t-Feature.start_t)
 			ltbb_fdiff_list.append(Feature.end_f-Feature.start_f)
 			etype = 4
+			ltbb_elevmax_list.append(Feature.elevmax)
 
 	etype_list.append(etype)
 	elevmax_list.append(Feature.elevmax)
@@ -147,7 +155,7 @@ plt.ylabel('Event Type',fontsize=20)
 plt.grid()
 plt.xlim(mds.epoch2num(np.min(t_start_list)),mds.epoch2num(np.max(t_start_list)))
 fig.autofmt_xdate()
-#plt.show()
+plt.show()
 plt.savefig(curdir+'figures/event_type.eps')
 plt.clf()
 plt.close()
@@ -171,7 +179,7 @@ plt.xticks(fontsize=15)
 plt.yticks(fontsize=15)
 plt.ylabel('Cumulative Density',fontsize=15)
 plt.grid()
-
+plt.show()
 plt.savefig(curdir+'figures/event_duration.png')
 plt.clf()
 plt.close()
@@ -201,7 +209,10 @@ plt.close()
 
 # plot event max_elev
 fig = plt.figure(figsize=(20,8))
-plt.plot(mds.epoch2num(t_start_list),elevmax_list,'.')
+plt.plot(mds.epoch2num(stnb_tstart_list),stnb_elevmax_list,'g.')
+plt.plot(mds.epoch2num(stbb_tstart_list),stbb_elevmax_list,'b.')
+plt.plot(mds.epoch2num(ltnb_tstart_list),ltnb_elevmax_list,'r.')
+plt.plot(mds.epoch2num(ltbb_tstart_list),ltbb_elevmax_list,'.',color='orange')
 ax = plt.gca()
 ax.xaxis.set_major_formatter(formatter=mds.DateFormatter('%H:%M:%S'))
 plt.xlabel('Event Start Time (Mar. 13, 2016 UTC)',fontsize=20)
@@ -212,6 +223,7 @@ plt.ylim(-45,45)
 plt.ylabel('Max Beamform Elevation (Deg.)',fontsize=20)
 plt.grid()
 fig.autofmt_xdate()
+plt.legend(('stnb', 'stbb', 'ltnb', 'ltbb'),prop={'size':15},loc='upper left')
 #plt.show()
 plt.savefig(curdir+'figures/event_maxelev.eps')
 plt.clf()
@@ -288,7 +300,7 @@ plt.yticks(fontsize=20)
 plt.ylabel('Cumulative Density',fontsize=20)
 plt.legend(('stnb', 'stbb', 'ltnb', 'ltbb'),prop={'size':15})
 plt.grid()
-
+plt.show()
 plt.savefig(curdir+'figures/event_bandwidth_stacked.eps')
 plt.clf()
 plt.close()
